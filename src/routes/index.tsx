@@ -286,7 +286,6 @@ function App() {
       {state === "END" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col">
-            <span>Duration: {duration / 1000}s</span>
             <span>
               Words per minute:{" "}
               {Math.trunc(
@@ -296,6 +295,24 @@ function App() {
                 }).length * minuteFactor
               )}
             </span>
+
+            <span>
+              Accuracy:{" "}
+              {Math.trunc(
+                (inputWords.reduce((acc, word, wordIndex) => {
+                  const expectedWord = randomWords[wordIndex];
+                  if (word === expectedWord) {
+                    acc++;
+                  }
+                  return acc;
+                }, 0) /
+                  inputWords.length) *
+                  100
+              )}
+              %
+            </span>
+
+            <span>Duration: {duration / 1000}s</span>
           </div>
 
           <button
