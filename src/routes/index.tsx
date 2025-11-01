@@ -6,8 +6,8 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-const randomWords = getRandomWords(10);
 const DEFAULT_DURATION = 15_000;
+const WORD_COUNT = 50;
 
 // Characters per minute
 // Words per minute
@@ -15,6 +15,9 @@ const DEFAULT_DURATION = 15_000;
 
 function App() {
   const ref = useRef<HTMLInputElement>(null);
+  const [randomWords, setRandomWords] = useState<string[]>(() =>
+    getRandomWords(WORD_COUNT)
+  );
   const [inputWords, setInputWords] = useState<string[]>([]);
   const [value, setValue] = useState("");
   const [startTime, setStartTime] = useState<number | undefined>(undefined);
@@ -24,7 +27,7 @@ function App() {
   const minuteFactor = useMemo(() => 60_000 / duration, [duration]);
 
   useEffect(() => {
-    const onType = () => {
+    const onType = (event: KeyboardEvent) => {
       if (state === "END") return;
 
       setState("PLAYING");
@@ -40,29 +43,74 @@ function App() {
   }, [state === "END"]);
 
   useEffect(() => {
-    if (!startTime) {
-      console.log("Skip timer. No start time.");
-      return;
-    }
+    if (value.length !== 0) return;
 
-    console.log("Starting interval");
-    const interval = setInterval(() => {
-      console.log("Setting elapsed time");
-      setElapsedTime(() => {
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= duration) {
-          setState("END");
-          return duration;
-        }
-        return elapsedTime;
-      });
-    }, 50);
+    const onType = (event: KeyboardEvent) => {
+      if (event.key === "Backspace") {
+        const previousInputWord = inputWords[inputWords.length - 1];
+        if (!previousInputWord) return;
+
+        const expectedWord = randomWords[inputWords.length - 1];
+        if (previousInputWord === expectedWord) return;
+
+        setValue(previousInputWord);
+        setInputWords((words) => {
+          return words.filter((_, index) => index !== words.length - 1);
+        });
+      }
+    };
+
+    window.document.addEventListener("keydown", onType);
 
     return () => {
-      console.log("Clearing interval");
-      clearInterval(interval);
+      window.document.removeEventListener("keydown", onType);
     };
-  }, [startTime]);
+  }, [value.length === 0]);
+
+  // useEffect(() => {
+  //   if (!startTime) {
+  //     console.log("Skip timer. No start time.");
+  //     return;
+  //   }
+
+  //   console.log("Starting interval");
+  //   const interval = setInterval(() => {
+  //     console.log("Setting elapsed time");
+  //     setElapsedTime(() => {
+  //       const elapsedTime = Date.now() - startTime;
+  //       if (elapsedTime >= duration) {
+  //         setState("END");
+  //         return duration;
+  //       }
+  //       return elapsedTime;
+  //     });
+  //   }, 50);
+
+  //   return () => {
+  //     console.log("Clearing interval");
+  //     clearInterval(interval);
+  //   };
+  // }, [startTime]);
+
+  const reset = () => {
+    setState("IDLE");
+    setRandomWords(getRandomWords(WORD_COUNT));
+    setDuration(DEFAULT_DURATION);
+    setElapsedTime(0);
+    setInputWords([]);
+    setStartTime(undefined);
+    setValue("");
+  };
+
+  useEffect(() => {
+    const onReset = (event: KeyboardEvent) => {
+      if (state === "END" && (event.key === "R" || event.key === "r")) {
+        reset();
+      }
+    };
+    window.document.addEventListener("keydown", onReset);
+    return () => window.document.removeEventListener("keydown", onReset);
+  }, [state === "END"]);
 
   return (
     <div
@@ -121,9 +169,9 @@ function App() {
             <span>
               {inputWords.map((word, wordIndex) => {
                 const expectedWord = randomWords[wordIndex];
-                console.log("Expected word", expectedWord);
-                console.log("Random words", randomWords);
-                console.log("index", wordIndex);
+                // console.log("Expected word", expectedWord);
+                // console.log("Random words", randomWords);
+                // console.log("index", wordIndex);
 
                 return (
                   <span>
@@ -134,9 +182,23 @@ function App() {
                           word !== expectedWord ? "1px" : undefined,
                       }}
                     >
-                      {word.split("").map((letter, letterIndex) => (
-                        <span key={letterIndex}>{letter}</span>
-                      ))}
+                      {word.split("").map((letter, letterIndex) => {
+                        const expectedLetter = expectedWord?.[letterIndex];
+                        return (
+                          <span
+                            key={letterIndex}
+                            style={{
+                              color: !expectedLetter
+                                ? "pink"
+                                : letter !== expectedLetter
+                                  ? "red"
+                                  : "inherit",
+                            }}
+                          >
+                            {expectedLetter ?? letter}
+                          </span>
+                        );
+                      })}
                       {expectedWord
                         ?.substring(word.length, expectedWord.length)
                         .split("")
@@ -151,13 +213,18 @@ function App() {
               })}
             </span>
 
-            {value.split("").map((letter, index) => {
-              const expectedLetter = randomWords[inputWords.length]?.[index];
+            {value.split("").map((letter, letterIndex) => {
+              const expectedLetter =
+                randomWords[inputWords.length]?.[letterIndex];
               return (
                 <span
-                  key={index}
+                  key={letterIndex}
                   style={{
-                    color: letter !== expectedLetter ? "red" : "inherit",
+                    color: !expectedLetter
+                      ? "pink"
+                      : letter !== expectedLetter
+                        ? "red"
+                        : "inherit",
                   }}
                   className="relative"
                 >
@@ -167,8 +234,8 @@ function App() {
                     Letter "{letter}"{`\n`}
                     Expected letter "{expectedLetter}"{`\n`}
                   </span> */}
-                  {letter}
-                  {index === value.length - 1 && (
+                  {expectedLetter ?? letter}
+                  {letterIndex === value.length - 1 && (
                     <span className="animate-pulse absolute -right-1">|</span>
                   )}
                 </span>
@@ -213,16 +280,27 @@ function App() {
       )}
 
       {state === "END" && (
-        <div className="flex flex-col gap-1">
-          <span>Duration: {duration / 1000}s</span>
-          {/* <span>Factor: {minuteFactor}</span> */}
-          <span>
-            Words per minute:{" "}
-            {inputWords.filter((word, wordIndex) => {
-              const expectedWord = randomWords[wordIndex];
-              return word === expectedWord;
-            }).length * minuteFactor}
-          </span>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col">
+            <span>Duration: {duration / 1000}s</span>
+            {/* <span>Factor: {minuteFactor}</span> */}
+            <span>
+              Words per minute:{" "}
+              {Math.trunc(
+                inputWords.filter((word, wordIndex) => {
+                  const expectedWord = randomWords[wordIndex];
+                  return word === expectedWord;
+                }).length * minuteFactor
+              )}
+            </span>
+          </div>
+
+          <button
+            className="text-xs border py-1 px-3 rounded-lg self-center"
+            onClick={() => reset()}
+          >
+            Try again
+          </button>
         </div>
       )}
 
