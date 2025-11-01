@@ -27,7 +27,7 @@ function App() {
   const minuteFactor = useMemo(() => 60_000 / duration, [duration]);
 
   useEffect(() => {
-    const onType = (event: KeyboardEvent) => {
+    const onType = () => {
       if (state === "END") return;
 
       setState("PLAYING");
@@ -67,39 +67,42 @@ function App() {
     };
   }, [value.length === 0]);
 
-  // useEffect(() => {
-  //   if (!startTime) {
-  //     console.log("Skip timer. No start time.");
-  //     return;
-  //   }
+  useEffect(() => {
+    if (!startTime || state !== "PLAYING") {
+      console.log("Skip timer. No start time.");
+      return;
+    }
 
-  //   console.log("Starting interval");
-  //   const interval = setInterval(() => {
-  //     console.log("Setting elapsed time");
-  //     setElapsedTime(() => {
-  //       const elapsedTime = Date.now() - startTime;
-  //       if (elapsedTime >= duration) {
-  //         setState("END");
-  //         return duration;
-  //       }
-  //       return elapsedTime;
-  //     });
-  //   }, 50);
+    console.log("Starting interval");
+    const interval = setInterval(() => {
+      console.log("Setting elapsed time");
+      setElapsedTime(() => {
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime >= duration) {
+          setState("END");
+          return duration;
+        }
+        return elapsedTime;
+      });
+    }, 50);
 
-  //   return () => {
-  //     console.log("Clearing interval");
-  //     clearInterval(interval);
-  //   };
-  // }, [startTime]);
+    return () => {
+      console.log("Clearing interval");
+      clearInterval(interval);
+    };
+  }, [startTime, state]);
 
   const reset = () => {
-    setState("IDLE");
     setRandomWords(getRandomWords(WORD_COUNT));
     setDuration(DEFAULT_DURATION);
     setElapsedTime(0);
     setInputWords([]);
     setStartTime(undefined);
     setValue("");
+
+    setTimeout(() => {
+      setState("IDLE");
+    });
   };
 
   useEffect(() => {
