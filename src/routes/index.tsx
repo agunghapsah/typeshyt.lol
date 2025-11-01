@@ -73,9 +73,9 @@ function App() {
       return;
     }
 
-    console.log("Starting interval");
+    // console.log("Starting interval");
     const interval = setInterval(() => {
-      console.log("Setting elapsed time");
+      // console.log("Setting elapsed time");
       setElapsedTime(() => {
         const elapsedTime = Date.now() - startTime;
         if (elapsedTime >= duration) {
@@ -105,6 +105,7 @@ function App() {
     });
   };
 
+  // Reset shortcut
   useEffect(() => {
     const onReset = (event: KeyboardEvent) => {
       if (state === "END" && (event.key === "R" || event.key === "r")) {
@@ -114,6 +115,12 @@ function App() {
     window.document.addEventListener("keydown", onReset);
     return () => window.document.removeEventListener("keydown", onReset);
   }, [state === "END"]);
+
+  // Scroll to current word
+  useEffect(() => {
+    const word = document.getElementById(inputWords.length.toString());
+    word?.scrollIntoView();
+  }, [inputWords.length]);
 
   return (
     <div
@@ -168,117 +175,111 @@ function App() {
             }}
           />
 
-          <span className="tracking-wide relative">
-            <span>
-              {inputWords.map((word, wordIndex) => {
-                const expectedWord = randomWords[wordIndex];
-                // console.log("Expected word", expectedWord);
-                // console.log("Random words", randomWords);
-                // console.log("index", wordIndex);
+          <div className="h-18 overflow-hidden">
+            <span className="tracking-wide relative">
+              <span>
+                {inputWords.map((word, wordIndex) => {
+                  const expectedWord = randomWords[wordIndex];
 
+                  return (
+                    <span>
+                      <span
+                        className="border-b-red-500"
+                        style={{
+                          borderBottomWidth:
+                            word !== expectedWord ? "1px" : undefined,
+                        }}
+                      >
+                        {word.split("").map((letter, letterIndex) => {
+                          const expectedLetter = expectedWord?.[letterIndex];
+                          return (
+                            <span
+                              key={letterIndex}
+                              style={{
+                                color: !expectedLetter
+                                  ? "pink"
+                                  : letter !== expectedLetter
+                                    ? "red"
+                                    : "inherit",
+                              }}
+                            >
+                              {expectedLetter ?? letter}
+                            </span>
+                          );
+                        })}
+                        {expectedWord
+                          ?.substring(word.length, expectedWord.length)
+                          .split("")
+                          .map((letter, letterIndex) => (
+                            <span key={letterIndex} className="opacity-40">
+                              {letter}
+                            </span>
+                          ))}
+                      </span>{" "}
+                    </span>
+                  );
+                })}
+              </span>
+
+              {value.split("").map((letter, letterIndex) => {
+                const expectedLetter =
+                  randomWords[inputWords.length]?.[letterIndex];
                 return (
-                  <span>
-                    <span
-                      className="border-b-red-500"
-                      style={{
-                        borderBottomWidth:
-                          word !== expectedWord ? "1px" : undefined,
-                      }}
-                    >
-                      {word.split("").map((letter, letterIndex) => {
-                        const expectedLetter = expectedWord?.[letterIndex];
-                        return (
-                          <span
-                            key={letterIndex}
-                            style={{
-                              color: !expectedLetter
-                                ? "pink"
-                                : letter !== expectedLetter
-                                  ? "red"
-                                  : "inherit",
-                            }}
-                          >
-                            {expectedLetter ?? letter}
-                          </span>
-                        );
-                      })}
-                      {expectedWord
-                        ?.substring(word.length, expectedWord.length)
-                        .split("")
-                        .map((letter, letterIndex) => (
-                          <span key={letterIndex} className="opacity-40">
-                            {letter}
-                          </span>
-                        ))}
-                    </span>{" "}
+                  <span
+                    key={letterIndex}
+                    style={{
+                      color: !expectedLetter
+                        ? "pink"
+                        : letter !== expectedLetter
+                          ? "red"
+                          : "inherit",
+                    }}
+                    className="relative"
+                  >
+                    {expectedLetter ?? letter}
+                    {letterIndex === value.length - 1 && (
+                      <span className="animate-pulse absolute -right-1">|</span>
+                    )}
                   </span>
                 );
               })}
-            </span>
 
-            {value.split("").map((letter, letterIndex) => {
-              const expectedLetter =
-                randomWords[inputWords.length]?.[letterIndex];
-              return (
+              {value.length === 0 && (
                 <span
-                  key={letterIndex}
+                  className="animate-pulse absolute"
                   style={{
-                    color: !expectedLetter
-                      ? "pink"
-                      : letter !== expectedLetter
-                        ? "red"
-                        : "inherit",
+                    left:
+                      value.length === 0 && inputWords.length === 0
+                        ? "-0.3rem"
+                        : undefined,
                   }}
-                  className="relative"
                 >
-                  {/* <span>
-                    Index "{index}"{`\n`}
-                    Index value "{index + correctWords.length}"{`\n`}
-                    Letter "{letter}"{`\n`}
-                    Expected letter "{expectedLetter}"{`\n`}
-                  </span> */}
-                  {expectedLetter ?? letter}
-                  {letterIndex === value.length - 1 && (
-                    <span className="animate-pulse absolute -right-1">|</span>
-                  )}
+                  |
                 </span>
-              );
-            })}
+              )}
 
-            {value.length === 0 && (
-              <span
-                className="animate-pulse absolute"
-                style={{
-                  left:
-                    value.length === 0 && inputWords.length === 0
-                      ? "-0.3rem"
-                      : undefined,
-                }}
-              >
-                |
+              <span className="opacity-40">
+                {randomWords.map((word, wordIndex) =>
+                  wordIndex < inputWords.length ? null : (
+                    <span
+                      key={wordIndex}
+                      id={wordIndex.toString()}
+                      className="scroll-mt-6"
+                    >
+                      {(wordIndex === inputWords.length
+                        ? word.substring(value.length, word.length)
+                        : word
+                      )
+                        .split("")
+                        .map((letter, letterIndex) => (
+                          <span key={letterIndex}>{letter}</span>
+                        ))}{" "}
+                    </span>
+                  )
+                )}
               </span>
-            )}
-
-            <span className="opacity-40">
-              {randomWords
-                .filter((word, wordIndex) => {
-                  if (wordIndex < inputWords.length) return;
-                  return word;
-                })
-                .map((word, wordIndex) => (
-                  <span>
-                    {(wordIndex === 0
-                      ? word.substring(value.length, word.length)
-                      : word
-                    )
-                      .split("")
-                      .map((letter, letterIndex) => (
-                        <span key={letterIndex}>{letter}</span>
-                      ))}{" "}
-                  </span>
-                ))}
             </span>
-          </span>
+          </div>
         </>
       )}
 
@@ -286,7 +287,6 @@ function App() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col">
             <span>Duration: {duration / 1000}s</span>
-            {/* <span>Factor: {minuteFactor}</span> */}
             <span>
               Words per minute:{" "}
               {Math.trunc(
@@ -307,7 +307,9 @@ function App() {
         </div>
       )}
 
-      {state === "PLAYING" && <div>{Math.trunc(elapsedTime / 1000)}</div>}
+      {state === "PLAYING" && (
+        <div>{duration / 1000 - Math.trunc(elapsedTime / 1000)}</div>
+      )}
     </div>
   );
 }
