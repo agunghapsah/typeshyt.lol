@@ -1,14 +1,13 @@
 import { getRandomWords } from "@/utils/random-words";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
   component: App,
 });
 
-const randomWords = getRandomWords();
-const words = randomWords.join(" ");
-const MAX_TIME = 3_000;
+const randomWords = getRandomWords(10);
+const DEFAULT_DURATION = 15_000;
 
 // Characters per minute
 // Words per minute
@@ -16,17 +15,21 @@ const MAX_TIME = 3_000;
 
 function App() {
   const ref = useRef<HTMLInputElement>(null);
-  const [correctWords, setCorrectWords] = useState<string[]>([]);
+  const [inputWords, setInputWords] = useState<string[]>([]);
   const [value, setValue] = useState("");
   const [startTime, setStartTime] = useState<number | undefined>(undefined);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [state, setState] = useState<"IDLE" | "PLAYING" | "END">("IDLE");
+  const [duration, setDuration] = useState<number>(() => DEFAULT_DURATION);
+  const minuteFactor = useMemo(() => 60_000 / duration, [duration]);
 
   useEffect(() => {
-    const onType = (event: KeyboardEvent) => {
+    const onType = () => {
+      if (state === "END") return;
+
       setState("PLAYING");
       ref.current?.focus();
-      setStartTime(Date.now());
+      setStartTime((value) => value ?? Date.now());
     };
 
     window.document.addEventListener("keydown", onType);
@@ -34,24 +37,32 @@ function App() {
     return () => {
       window.document.removeEventListener("keydown", onType);
     };
-  }, []);
+  }, [state === "END"]);
 
-  // useEffect(() => {
-  //   if (!startTime) return;
+  useEffect(() => {
+    if (!startTime) {
+      console.log("Skip timer. No start time.");
+      return;
+    }
 
-  //   const interval = setInterval(() => {
-  //     setElapsedTime(() => {
-  //       const elapsedTime = Date.now() - startTime;
-  //       if (elapsedTime >= MAX_TIME) {
-  //         setState("END");
-  //         return MAX_TIME;
-  //       }
-  //       return elapsedTime;
-  //     });
-  //   }, 50);
+    console.log("Starting interval");
+    const interval = setInterval(() => {
+      console.log("Setting elapsed time");
+      setElapsedTime(() => {
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime >= duration) {
+          setState("END");
+          return duration;
+        }
+        return elapsedTime;
+      });
+    }, 50);
 
-  //   return () => clearInterval(interval);
-  // }, [startTime]);
+    return () => {
+      console.log("Clearing interval");
+      clearInterval(interval);
+    };
+  }, [startTime]);
 
   return (
     <div
@@ -82,30 +93,66 @@ function App() {
                 const words = value.split(" ");
                 const word = words[words.length - 2];
                 const expectedWord =
-                  randomWords[correctWords.length + words.length - 2];
+                  randomWords[inputWords.length + words.length - 2];
 
                 console.log("FOUND NEW WORD:", word);
                 console.log("EXPECTED WORD:", expectedWord);
+                setInputWords((value) => {
+                  const inputWords = [...value, word];
 
-                if (word === expectedWord) {
-                  setValue("");
-                  setCorrectWords((value) => [...value, word]);
-                }
+                  if (inputWords.length === randomWords.length) {
+                    const duration = Date.now() - (startTime ?? 0);
+                    console.log("Done in ", duration);
+                    setDuration(duration);
+                    setStartTime(undefined);
+                    setState("END");
+                  }
+
+                  return inputWords;
+                });
+                setValue("");
               } else {
                 setValue(value);
               }
             }}
           />
 
-          <span className="tracking-wide">
+          <span className="tracking-wide relative">
             <span>
-              {correctWords.map((word) => {
-                return <span>{word} </span>;
+              {inputWords.map((word, wordIndex) => {
+                const expectedWord = randomWords[wordIndex];
+                console.log("Expected word", expectedWord);
+                console.log("Random words", randomWords);
+                console.log("index", wordIndex);
+
+                return (
+                  <span>
+                    <span
+                      className="border-b-red-500"
+                      style={{
+                        borderBottomWidth:
+                          word !== expectedWord ? "1px" : undefined,
+                      }}
+                    >
+                      {word.split("").map((letter, letterIndex) => (
+                        <span key={letterIndex}>{letter}</span>
+                      ))}
+                      {expectedWord
+                        ?.substring(word.length, expectedWord.length)
+                        .split("")
+                        .map((letter, letterIndex) => (
+                          <span key={letterIndex} className="opacity-40">
+                            {letter}
+                          </span>
+                        ))}
+                    </span>{" "}
+                  </span>
+                );
               })}
             </span>
 
             {value.split("").map((letter, index) => {
-              const expectedLetter = randomWords[correctWords.length][index];
+              const expectedLetter = randomWords[inputWords.length]?.[index];
               return (
                 <span
                   key={index}
@@ -129,13 +176,23 @@ function App() {
             })}
 
             {value.length === 0 && (
-              <span className="animate-pulse absolute">|</span>
+              <span
+                className="animate-pulse absolute"
+                style={{
+                  left:
+                    value.length === 0 && inputWords.length === 0
+                      ? "-0.3rem"
+                      : undefined,
+                }}
+              >
+                |
+              </span>
             )}
 
             <span className="opacity-40">
               {randomWords
                 .filter((word, wordIndex) => {
-                  if (wordIndex < correctWords.length) return;
+                  if (wordIndex < inputWords.length) return;
                   return word;
                 })
                 .map((word, wordIndex) => (
@@ -156,8 +213,16 @@ function App() {
       )}
 
       {state === "END" && (
-        <div>
-          <span>Good job!</span>
+        <div className="flex flex-col gap-1">
+          <span>Duration: {duration / 1000}s</span>
+          {/* <span>Factor: {minuteFactor}</span> */}
+          <span>
+            Words per minute:{" "}
+            {inputWords.filter((word, wordIndex) => {
+              const expectedWord = randomWords[wordIndex];
+              return word === expectedWord;
+            }).length * minuteFactor}
+          </span>
         </div>
       )}
 
