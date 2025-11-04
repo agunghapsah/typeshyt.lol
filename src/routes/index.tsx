@@ -28,10 +28,12 @@ function App() {
       `}
     >
       <h1 className="text-7xl font-bold">typeshyt</h1>
-      {/* <Debug /> */}
 
-      {state === 'PLAYING' && <Timer />}
-      {state !== 'END' ? <Typer /> : <Result />}
+      <div className="flex flex-col gap-6">
+        {/* <Debug /> */}
+        {state !== 'END' && <Timer />}
+        {state !== 'END' ? <Typer /> : <Result />}
+      </div>
     </div>
   );
 }

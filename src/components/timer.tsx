@@ -4,7 +4,7 @@ import { useSnapshot } from 'valtio';
 import { watch } from 'valtio/utils';
 
 export const Timer = () => {
-  const { elapsedTime, duration } = useSnapshot($store);
+  const { elapsedTime, duration, state } = useSnapshot($store);
 
   useEffect(() => {
     return watch((get) => {
@@ -29,11 +29,25 @@ export const Timer = () => {
       }, 50);
 
       return () => {
-        console.log('Clearing interval');
+        // console.log('Clearing interval');
         clearInterval(interval);
       };
     });
   }, []);
 
-  return <div>{duration / 1000 - Math.trunc(elapsedTime / 1000)}</div>;
+  return (
+    <div
+      data-playing={state === 'PLAYING'}
+      className={`
+        text-3xl
+        opacity-0
+        data-[playing=true]:opacity-100
+        overflow-hidden
+        transition-all
+        duration-1000
+      `}
+    >
+      {duration / 1000 - Math.trunc(elapsedTime / 1000)}
+    </div>
+  );
 };

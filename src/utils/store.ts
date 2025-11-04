@@ -14,6 +14,12 @@ type Store = {
   elapsedTime: number;
   duration: number;
 
+  inputHistory: {
+    timestamp: number;
+    letter: string;
+    expectedLetter: string;
+  }[];
+
   state: 'IDLE' | 'PLAYING' | 'END';
   randomWords: string[];
   inputWords: string[];
@@ -30,6 +36,7 @@ export const $store = proxy<Store>({
   state: 'IDLE',
   randomWords: getRandomWords(WORD_COUNT),
   inputWords: [],
+  inputHistory: [],
   value: '',
   setValue: (value) => {
     // Start on type
