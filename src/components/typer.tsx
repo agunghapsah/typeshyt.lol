@@ -6,6 +6,18 @@ import { subscribeKey } from 'valtio/utils';
 export const INPUT_ID = 'input';
 
 export const Typer = () => {
+  return (
+    <div className="h-18 overflow-hidden">
+      <span className="tracking-wide relative">
+        <InputWords />
+        <Input />
+        <RandomWords />
+      </span>
+    </div>
+  );
+};
+
+const Input = () => {
   const { value } = useSnapshot($store, { sync: true });
   const { inputWords, randomWords } = useSnapshot($store);
 
@@ -32,111 +44,123 @@ export const Typer = () => {
         onChange={onChange}
       />
 
-      <div className="h-18 overflow-hidden">
-        <span className="tracking-wide relative">
-          <span>
-            {inputWords.map((word, wordIndex) => {
-              const expectedWord = randomWords[wordIndex];
+      <Word word={value} expectedWord={randomWords[inputWords.length]} />
 
-              return (
-                <span>
-                  <span
-                    className="border-b-red-500"
-                    style={{
-                      borderBottomWidth:
-                        word !== expectedWord ? '1px' : undefined,
-                    }}
-                  >
-                    {word.split('').map((letter, letterIndex) => {
-                      const expectedLetter = expectedWord?.[letterIndex];
-                      return (
-                        <span
-                          key={letterIndex}
-                          style={{
-                            color: !expectedLetter
-                              ? 'pink'
-                              : letter !== expectedLetter
-                                ? 'red'
-                                : 'inherit',
-                          }}
-                        >
-                          {expectedLetter ?? letter}
-                        </span>
-                      );
-                    })}
-                    {expectedWord
-                      ?.substring(word.length, expectedWord.length)
-                      .split('')
-                      .map((letter, letterIndex) => (
-                        <span key={letterIndex} className="opacity-40">
-                          {letter}
-                        </span>
-                      ))}
-                  </span>{' '}
-                </span>
-              );
-            })}
+      {/* {value.length === 0 && (
+        <span
+          className="animate-pulse absolute"
+          style={{
+            left:
+              value.length === 0 && inputWords.length === 0
+                ? '-0.3rem'
+                : undefined,
+          }}
+        >
+          |
+        </span>
+      )} */}
+    </>
+  );
+};
+
+const Word = ({
+  word,
+  expectedWord,
+}: {
+  word: string;
+  expectedWord?: string;
+}) => {
+  return (
+    <>
+      {word.split('').map((letter, letterIndex) => {
+        const expectedLetter = expectedWord?.[letterIndex];
+        return (
+          <span
+            key={letterIndex}
+            style={{
+              color: !expectedLetter
+                ? 'pink'
+                : letter !== expectedLetter
+                  ? 'red'
+                  : 'inherit',
+            }}
+          >
+            {expectedLetter ?? letter}
           </span>
+        );
+      })}
+    </>
+  );
+};
 
-          {value.split('').map((letter, letterIndex) => {
-            const expectedLetter =
-              randomWords[inputWords.length]?.[letterIndex];
-            return (
-              <span
-                key={letterIndex}
-                style={{
-                  color: !expectedLetter
-                    ? 'pink'
-                    : letter !== expectedLetter
-                      ? 'red'
-                      : 'inherit',
-                }}
-                className="relative"
-              >
-                {expectedLetter ?? letter}
-                {letterIndex === value.length - 1 && (
-                  <span className="animate-pulse absolute -right-1">|</span>
-                )}
-              </span>
-            );
-          })}
+const InputWords = () => {
+  const { inputWords, randomWords } = useSnapshot($store);
 
-          {value.length === 0 && (
+  return (
+    <span>
+      {inputWords.map((word, wordIndex) => {
+        const expectedWord = randomWords[wordIndex];
+        return (
+          <span>
             <span
-              className="animate-pulse absolute"
+              className="border-b-red-500"
               style={{
-                left:
-                  value.length === 0 && inputWords.length === 0
-                    ? '-0.3rem'
-                    : undefined,
+                borderBottomWidth: word !== expectedWord ? '1px' : undefined,
               }}
             >
-              |
-            </span>
-          )}
-
-          <span className="opacity-40">
-            {randomWords.map((word, wordIndex) =>
-              wordIndex < inputWords.length ? null : (
-                <span
-                  key={wordIndex}
-                  id={wordIndex.toString()}
-                  className="scroll-mt-6"
-                >
-                  {(wordIndex === inputWords.length
-                    ? word.substring(value.length, word.length)
-                    : word
-                  )
-                    .split('')
-                    .map((letter, letterIndex) => (
-                      <span key={letterIndex}>{letter}</span>
-                    ))}{' '}
-                </span>
-              )
-            )}
+              <Word key={wordIndex} word={word} expectedWord={expectedWord} />
+              {expectedWord
+                ?.substring(word.length, expectedWord.length)
+                .split('')
+                .map((letter, letterIndex) => (
+                  <span key={letterIndex} className="opacity-40">
+                    {letter}
+                  </span>
+                ))}
+            </span>{' '}
           </span>
-        </span>
-      </div>
-    </>
+        );
+      })}
+    </span>
+  );
+};
+
+const CurrentWord = () => {
+  const { value } = useSnapshot($store, { sync: true });
+  const inputWordsLength = useSnapshot($store.inputWords).length;
+  const randomWord = useSnapshot($store.randomWords)[inputWordsLength];
+
+  return (
+    <span id={inputWordsLength.toString()} className="scroll-mt-6">
+      {randomWord
+        .substring(value.length, randomWord.length)
+        .split('')
+        .map((letter, letterIndex) => (
+          <span key={letterIndex}>{letter}</span>
+        ))}{' '}
+    </span>
+  );
+};
+
+const RandomWords = () => {
+  const { randomWords } = useSnapshot($store);
+  const inputWordsLength = useSnapshot($store.inputWords).length;
+
+  return (
+    <span className="opacity-40">
+      {randomWords.map((word, wordIndex) =>
+        wordIndex < inputWordsLength ? null : wordIndex === inputWordsLength ? (
+          <CurrentWord key={wordIndex} />
+        ) : (
+          <span
+            key={wordIndex}
+            id={wordIndex.toString()}
+            className="scroll-mt-6"
+          >
+            {word}{' '}
+          </span>
+        )
+      )}
+    </span>
   );
 };
