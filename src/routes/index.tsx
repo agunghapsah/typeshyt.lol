@@ -2,7 +2,6 @@ import { Debug } from '@/components/debug';
 import { Result } from '@/components/result';
 import { Timer } from '@/components/timer';
 import { Typer } from '@/components/typer';
-import { useKeyboardEvents } from '@/hooks/use-keyboard-events';
 import { $store } from '@/utils/store';
 import { createFileRoute } from '@tanstack/react-router';
 import { useSnapshot } from 'valtio';
@@ -12,7 +11,6 @@ export const Route = createFileRoute('/')({
 });
 
 function App() {
-  useKeyboardEvents();
   const { state } = useSnapshot($store, { sync: true });
 
   return (
@@ -25,12 +23,12 @@ function App() {
         flex
         flex-col
         items-center
-        p-8
-        gap-4
+        p-18
+        gap-16
       `}
     >
-      <h1 className="text-4xl font-bold">typeshyt</h1>
-      <Debug />
+      <h1 className="text-7xl font-bold">typeshyt</h1>
+      {/* <Debug /> */}
 
       {state === 'PLAYING' && <Timer />}
       {state !== 'END' ? <Typer /> : <Result />}

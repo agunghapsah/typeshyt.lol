@@ -1,10 +1,29 @@
 import { $store } from '@/utils/store';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSnapshot } from 'valtio';
 
 export const Result = () => {
   const { inputWords, randomWords, duration } = useSnapshot($store);
   const minuteFactor = useMemo(() => 60_000 / duration, [duration]);
+
+  // Reset shortcut
+  useEffect(() => {
+    const onType = (event: KeyboardEvent) => {
+      if (
+        $store.state === 'END' &&
+        (event.ctrlKey || event.metaKey) &&
+        (event.key === 'R' || event.key === 'r')
+      ) {
+        $store.reset();
+      }
+    };
+
+    window.document.addEventListener('keydown', onType);
+
+    return () => {
+      window.document.removeEventListener('keydown', onType);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">

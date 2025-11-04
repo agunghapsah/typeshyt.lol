@@ -9,6 +9,7 @@ export const DEFAULT_DURATION = 15_000;
 export const WORD_COUNT = 50;
 
 type Store = {
+  isFocus: boolean;
   startTime: number | undefined;
   elapsedTime: number;
   duration: number;
@@ -22,6 +23,7 @@ type Store = {
 };
 
 export const $store = proxy<Store>({
+  isFocus: false,
   startTime: undefined,
   elapsedTime: 0,
   duration: DEFAULT_DURATION,
@@ -31,12 +33,12 @@ export const $store = proxy<Store>({
   value: '',
   setValue: (value) => {
     // Start on type
-    if ($store.state === 'IDLE' && isValidCharacter(value)) {
+    if ($store.state === 'IDLE' && isValidCharacter(value.trim())) {
       const input = document.getElementById(INPUT_ID);
       input?.focus();
       $store.state = 'PLAYING';
       $store.startTime = $store.startTime ?? Date.now();
-      $store.value = value;
+      $store.value = value.trim();
       return;
     }
 
@@ -46,7 +48,7 @@ export const $store = proxy<Store>({
       !value.startsWith(' ') &&
       value.endsWith(' ')
     ) {
-      const word = value.substring(0, value.length - 1);
+      const word = value.trim();
       $store.inputWords.push(word);
       $store.value = '';
       return;
@@ -54,7 +56,7 @@ export const $store = proxy<Store>({
 
     // Set value
     if ($store.state === 'PLAYING') {
-      $store.value = value;
+      $store.value = value.trim();
     }
   },
   reset: () => {
