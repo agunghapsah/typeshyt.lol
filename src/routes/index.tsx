@@ -1,4 +1,3 @@
-import { Debug } from '@/components/debug';
 import { Result } from '@/components/result';
 import { Timer } from '@/components/timer';
 import { Typer } from '@/components/typer';
