@@ -1,5 +1,7 @@
 import { proxy } from 'valtio';
 import { getRandomWords } from './random-words';
+import { replaceArray } from './replace-array';
+import { emptyArray } from './empty-array';
 
 export const DEFAULT_DURATION = 15_000;
 export const WORD_COUNT = 50;
@@ -14,6 +16,7 @@ type Store = {
   inputWords: string[];
   value: string;
   setValue: (value: string) => void;
+  reset: () => void;
 };
 
 export const $store = proxy<Store>({
@@ -33,5 +36,17 @@ export const $store = proxy<Store>({
     }
 
     $store.value = value;
+  },
+  reset: () => {
+    replaceArray($store.randomWords, getRandomWords(WORD_COUNT));
+    emptyArray($store.inputWords);
+    $store.value = '';
+    $store.duration = DEFAULT_DURATION;
+    $store.elapsedTime = 0;
+    $store.startTime = undefined;
+
+    setTimeout(() => {
+      $store.state = 'IDLE';
+    });
   },
 });
