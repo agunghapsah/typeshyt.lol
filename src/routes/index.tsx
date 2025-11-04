@@ -1,13 +1,15 @@
-import { getRandomWords } from "@/utils/random-words";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { emptyArray } from '@/utils/empty-array';
+import { getRandomWords } from '@/utils/random-words';
+import { replaceArray } from '@/utils/replace-array';
+import { $store, DEFAULT_DURATION, WORD_COUNT } from '@/utils/store';
+import { createFileRoute } from '@tanstack/react-router';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useSnapshot } from 'valtio';
+import { subscribeKey, watch } from 'valtio/utils';
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute('/')({
   component: App,
 });
-
-const DEFAULT_DURATION = 15_000;
-const WORD_COUNT = 50;
 
 // Characters per minute
 // Words per minute
@@ -15,112 +17,109 @@ const WORD_COUNT = 50;
 
 function App() {
   const ref = useRef<HTMLInputElement>(null);
-  const [randomWords, setRandomWords] = useState<string[]>(() =>
-    getRandomWords(WORD_COUNT)
-  );
-  const [inputWords, setInputWords] = useState<string[]>([]);
-  const [value, setValue] = useState("");
-  const [startTime, setStartTime] = useState<number | undefined>(undefined);
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-  const [state, setState] = useState<"IDLE" | "PLAYING" | "END">("IDLE");
-  const [duration, setDuration] = useState<number>(() => DEFAULT_DURATION);
+  const { value } = useSnapshot($store, { sync: true });
+  const { state, inputWords, randomWords, elapsedTime, duration } =
+    useSnapshot($store);
   const minuteFactor = useMemo(() => 60_000 / duration, [duration]);
 
   useEffect(() => {
-    const onType = () => {
-      if (state === "END") return;
-
-      setState("PLAYING");
-      ref.current?.focus();
-      setStartTime((value) => value ?? Date.now());
-    };
-
-    window.document.addEventListener("keydown", onType);
-
-    return () => {
-      window.document.removeEventListener("keydown", onType);
-    };
-  }, [state === "END"]);
-
-  useEffect(() => {
-    if (value.length !== 0) return;
-
     const onType = (event: KeyboardEvent) => {
-      if (event.key === "Backspace") {
-        const previousInputWord = inputWords[inputWords.length - 1];
-        if (!previousInputWord) return;
-
-        const expectedWord = randomWords[inputWords.length - 1];
-        if (previousInputWord === expectedWord) return;
-
-        setValue(previousInputWord);
-        setInputWords((words) => {
-          return words.filter((_, index) => index !== words.length - 1);
-        });
-      }
-    };
-
-    window.document.addEventListener("keydown", onType);
-
-    return () => {
-      window.document.removeEventListener("keydown", onType);
-    };
-  }, [value.length === 0]);
-
-  useEffect(() => {
-    if (!startTime || state !== "PLAYING") {
-      console.log("Skip timer. No start time.");
-      return;
-    }
-
-    // console.log("Starting interval");
-    const interval = setInterval(() => {
-      // console.log("Setting elapsed time");
-      setElapsedTime(() => {
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= duration) {
-          setState("END");
-          return duration;
-        }
-        return elapsedTime;
-      });
-    }, 50);
-
-    return () => {
-      console.log("Clearing interval");
-      clearInterval(interval);
-    };
-  }, [startTime, state]);
-
-  const reset = () => {
-    setRandomWords(getRandomWords(WORD_COUNT));
-    setDuration(DEFAULT_DURATION);
-    setElapsedTime(0);
-    setInputWords([]);
-    setStartTime(undefined);
-    setValue("");
-
-    setTimeout(() => {
-      setState("IDLE");
-    });
-  };
-
-  // Reset shortcut
-  useEffect(() => {
-    const onReset = (event: KeyboardEvent) => {
-      if (state === "END" && (event.key === "R" || event.key === "r")) {
+      // Reset shortcut
+      if (
+        $store.state === 'END' &&
+        (event.ctrlKey || event.metaKey) &&
+        (event.key === 'R' || event.key === 'r')
+      ) {
         reset();
       }
+
+      // Start on type
+      if ($store.state === 'IDLE') {
+        ref.current?.focus();
+        $store.state = 'PLAYING';
+        $store.startTime = $store.startTime ?? Date.now();
+        return;
+      }
+
+      // Edit previous word on backspace
+      if (
+        $store.state === 'PLAYING' &&
+        $store.value.length === 0 &&
+        event.key === 'Backspace'
+      ) {
+        const previousInputWord =
+          $store.inputWords[$store.inputWords.length - 1];
+        if (!previousInputWord) return;
+
+        const expectedWord = $store.randomWords[$store.inputWords.length - 1];
+        if (previousInputWord === expectedWord) return;
+
+        $store.value = previousInputWord;
+        $store.inputWords.pop();
+      }
     };
-    window.document.addEventListener("keydown", onReset);
-    return () => window.document.removeEventListener("keydown", onReset);
-  }, [state === "END"]);
+
+    window.document.addEventListener('keydown', onType);
+
+    return () => {
+      window.document.removeEventListener('keydown', onType);
+    };
+  }, []);
+
+  useEffect(() => {
+    return watch((get) => {
+      const { startTime, state } = get($store);
+
+      if (!startTime || state !== 'PLAYING') {
+        console.log('Skip timer. No start time.');
+        return;
+      }
+
+      // console.log("Starting interval");
+      const interval = setInterval(() => {
+        // console.log("Setting elapsed time");
+        const elapsedTime = Date.now() - startTime;
+
+        if (elapsedTime >= $store.duration) {
+          $store.state = 'END';
+          $store.elapsedTime = $store.duration;
+        }
+
+        $store.elapsedTime = elapsedTime;
+      }, 50);
+
+      return () => {
+        console.log('Clearing interval');
+        clearInterval(interval);
+      };
+    });
+  }, []);
+
+  const reset = useCallback(() => {
+    replaceArray($store.randomWords, getRandomWords(WORD_COUNT));
+    emptyArray($store.inputWords);
+    $store.value = '';
+    $store.duration = DEFAULT_DURATION;
+    $store.elapsedTime = 0;
+    $store.startTime = undefined;
+
+    setTimeout(() => {
+      $store.state = 'IDLE';
+    });
+  }, []);
 
   // Scroll to current word
   useEffect(() => {
-    const word = document.getElementById(inputWords.length.toString());
-    word?.scrollIntoView();
-  }, [inputWords.length]);
+    return subscribeKey($store.inputWords, 'length', (inputWordsLength) => {
+      const word = document.getElementById(inputWordsLength.toString());
+      word?.scrollIntoView();
+    });
+  }, []);
+
+  const onChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toLowerCase();
+    $store.setValue(value);
+  }, []);
 
   return (
     <div
@@ -138,41 +137,14 @@ function App() {
     >
       <h1 className="text-4xl font-bold">typeshyt</h1>
 
-      {state !== "END" && (
+      {state !== 'END' && (
         <>
           <input
             autoFocus={true}
             ref={ref}
             className="opacity-0"
             value={value}
-            onChange={(event) => {
-              const value = event.target.value.toLowerCase();
-              if (value.endsWith(" ")) {
-                const words = value.split(" ");
-                const word = words[words.length - 2];
-                const expectedWord =
-                  randomWords[inputWords.length + words.length - 2];
-
-                console.log("FOUND NEW WORD:", word);
-                console.log("EXPECTED WORD:", expectedWord);
-                setInputWords((value) => {
-                  const inputWords = [...value, word];
-
-                  if (inputWords.length === randomWords.length) {
-                    const duration = Date.now() - (startTime ?? 0);
-                    console.log("Done in ", duration);
-                    setDuration(duration);
-                    setStartTime(undefined);
-                    setState("END");
-                  }
-
-                  return inputWords;
-                });
-                setValue("");
-              } else {
-                setValue(value);
-              }
-            }}
+            onChange={onChange}
           />
 
           <div className="h-18 overflow-hidden">
@@ -187,20 +159,20 @@ function App() {
                         className="border-b-red-500"
                         style={{
                           borderBottomWidth:
-                            word !== expectedWord ? "1px" : undefined,
+                            word !== expectedWord ? '1px' : undefined,
                         }}
                       >
-                        {word.split("").map((letter, letterIndex) => {
+                        {word.split('').map((letter, letterIndex) => {
                           const expectedLetter = expectedWord?.[letterIndex];
                           return (
                             <span
                               key={letterIndex}
                               style={{
                                 color: !expectedLetter
-                                  ? "pink"
+                                  ? 'pink'
                                   : letter !== expectedLetter
-                                    ? "red"
-                                    : "inherit",
+                                    ? 'red'
+                                    : 'inherit',
                               }}
                             >
                               {expectedLetter ?? letter}
@@ -209,19 +181,19 @@ function App() {
                         })}
                         {expectedWord
                           ?.substring(word.length, expectedWord.length)
-                          .split("")
+                          .split('')
                           .map((letter, letterIndex) => (
                             <span key={letterIndex} className="opacity-40">
                               {letter}
                             </span>
                           ))}
-                      </span>{" "}
+                      </span>{' '}
                     </span>
                   );
                 })}
               </span>
 
-              {value.split("").map((letter, letterIndex) => {
+              {value.split('').map((letter, letterIndex) => {
                 const expectedLetter =
                   randomWords[inputWords.length]?.[letterIndex];
                 return (
@@ -229,10 +201,10 @@ function App() {
                     key={letterIndex}
                     style={{
                       color: !expectedLetter
-                        ? "pink"
+                        ? 'pink'
                         : letter !== expectedLetter
-                          ? "red"
-                          : "inherit",
+                          ? 'red'
+                          : 'inherit',
                     }}
                     className="relative"
                   >
@@ -250,7 +222,7 @@ function App() {
                   style={{
                     left:
                       value.length === 0 && inputWords.length === 0
-                        ? "-0.3rem"
+                        ? '-0.3rem'
                         : undefined,
                   }}
                 >
@@ -270,10 +242,10 @@ function App() {
                         ? word.substring(value.length, word.length)
                         : word
                       )
-                        .split("")
+                        .split('')
                         .map((letter, letterIndex) => (
                           <span key={letterIndex}>{letter}</span>
-                        ))}{" "}
+                        ))}{' '}
                     </span>
                   )
                 )}
@@ -283,11 +255,11 @@ function App() {
         </>
       )}
 
-      {state === "END" && (
+      {state === 'END' && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col">
             <span>
-              Words per minute:{" "}
+              Words per minute:{' '}
               {Math.trunc(
                 inputWords.filter((word, wordIndex) => {
                   const expectedWord = randomWords[wordIndex];
@@ -297,7 +269,7 @@ function App() {
             </span>
 
             <span>
-              Accuracy:{" "}
+              Accuracy:{' '}
               {Math.trunc(
                 (inputWords.reduce((acc, word, wordIndex) => {
                   const expectedWord = randomWords[wordIndex];
@@ -324,7 +296,7 @@ function App() {
         </div>
       )}
 
-      {state === "PLAYING" && (
+      {state === 'PLAYING' && (
         <div>{duration / 1000 - Math.trunc(elapsedTime / 1000)}</div>
       )}
     </div>
