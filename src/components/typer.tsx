@@ -97,18 +97,21 @@ const Input = () => {
 
   const onChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
+
+    if (!value.endsWith(' ')) {
+      const letterIndex = value.length - 1;
+      const letter = value[letterIndex];
+      const expectedLetter =
+        $store.randomWords[$store.inputWords.length]?.[letterIndex];
+
+      $store.inputHistory.push({
+        letter,
+        expectedLetter,
+        timestamp: Date.now(),
+      });
+    }
+
     $store.setValue(value);
-
-    const letterIndex = value.length - 1;
-    const letter = value[letterIndex];
-    const expectedLetter =
-      $store.randomWords[$store.inputWords.length]?.[letterIndex];
-
-    $store.inputHistory.push({
-      letter,
-      expectedLetter,
-      timestamp: Date.now(),
-    });
   }, []);
 
   const onFocus = useCallback(() => ($store.isFocus = true), []);
