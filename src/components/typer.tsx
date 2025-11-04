@@ -52,7 +52,7 @@ export const Typer = () => {
       ref={containerRef}
       className={`
         overflow-x-hidden
-        overflow-y-auto
+        overflow-y-hidden
         relative
       `}
       style={{

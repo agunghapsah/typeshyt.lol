@@ -9,11 +9,8 @@ export const Result = () => {
   // Reset shortcut
   useEffect(() => {
     const onType = (event: KeyboardEvent) => {
-      if (
-        $store.state === 'END' &&
-        (event.ctrlKey || event.metaKey) &&
-        (event.key === 'R' || event.key === 'r')
-      ) {
+      if ($store.state === 'END' && event.ctrlKey && event.key === ' ') {
+        event.preventDefault();
         $store.reset();
       }
     };
@@ -59,21 +56,68 @@ export const Result = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-8 text-3xl">
-      <div className="flex flex-col gap-2">
-        <span>Words per minute: {wordsPerMinute}</span>
-        <span>Accuracy: {accuracy}%</span>
-        <span>Correct keys: {correct}</span>
-        <span>Wrong keys: {incorrect}</span>
-        <span>Duration: {duration / 1000}s</span>
+    <div className="flex flex-col gap-8">
+      <div className="flex gap-4 items-start md:flex-row flex-col">
+        <div
+          className={`
+            border-2
+            flex
+            justify-center
+            items-center
+            p-4
+            rounded-2xl
+            border-gray-700
+          `}
+        >
+          <span>
+            <span className="text-7xl">{wordsPerMinute}</span>
+            <span className="text-xl"> WPM</span>
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1 text-xl">
+          <span className="text-gray-400">
+            Accuracy: <span className="text-white">{accuracy}%</span>
+          </span>
+          <span className="text-gray-400">
+            Correct keys: <span className="text-white">{correct}</span>
+          </span>
+          <span className="text-gray-400">
+            Wrong keys: <span className="text-white">{incorrect}</span>
+          </span>
+          <span className="text-gray-400">
+            Duration: <span className="text-white">{duration / 1000}s</span>
+          </span>
+        </div>
       </div>
 
-      <button
-        className="text-xl border py-1 px-3 rounded-lg self-center"
-        onClick={() => $store.reset()}
-      >
-        Try again
-      </button>
+      <div className="flex flex-col gap-1.5 items-center">
+        <button
+          className={`
+          text-lg
+          border
+          py-2
+          px-4
+          rounded-lg
+          self-center
+          border-gray-600
+          text-gray-200
+        `}
+          onClick={() => $store.reset()}
+        >
+          Try again
+        </button>
+
+        <span
+          className={`
+            font-mono
+            text-sm
+            text-gray-500
+          `}
+        >
+          cntl + space
+        </span>
+      </div>
     </div>
   );
 };
