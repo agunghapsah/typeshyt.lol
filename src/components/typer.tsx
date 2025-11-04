@@ -114,7 +114,17 @@ const Input = () => {
     $store.setValue(value);
   }, []);
 
-  const onFocus = useCallback(() => ($store.isFocus = true), []);
+  const onFocus = useCallback(() => {
+    $store.isFocus = true;
+
+    const input = document.getElementById(INPUT_ID) as
+      | HTMLInputElement
+      | undefined;
+
+    if (!input) return;
+    input.selectionStart = $store.value.length;
+    input.selectionEnd = $store.value.length;
+  }, []);
   const onBlur = useCallback(() => ($store.isFocus = false), []);
 
   useEffect(() => {
@@ -127,7 +137,7 @@ const Input = () => {
       <input
         id={INPUT_ID}
         autoFocus={true}
-        className="opacity-0 absolute pointer-events-none max-w-0"
+        className="opacity-0 fixed top-[-200%] left-[-200%] pointer-events-none"
         value={value}
         onChange={onChange}
         onBlur={onBlur}
