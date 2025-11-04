@@ -27,7 +27,7 @@ export const Typer = () => {
       <input
         id={INPUT_ID}
         autoFocus={true}
-        className="opacity-0"
+        className="opacity-0 absolute pointer-events-none"
         value={value}
         onChange={onChange}
       />

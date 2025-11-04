@@ -2,6 +2,8 @@ import { proxy } from 'valtio';
 import { getRandomWords } from './random-words';
 import { replaceArray } from './replace-array';
 import { emptyArray } from './empty-array';
+import { isValidCharacter } from './is-valid-character';
+import { INPUT_ID } from '@/components/typer';
 
 export const DEFAULT_DURATION = 15_000;
 export const WORD_COUNT = 50;
@@ -28,14 +30,32 @@ export const $store = proxy<Store>({
   inputWords: [],
   value: '',
   setValue: (value) => {
-    if (value.endsWith(' ')) {
+    // Start on type
+    if ($store.state === 'IDLE' && isValidCharacter(value)) {
+      const input = document.getElementById(INPUT_ID);
+      input?.focus();
+      $store.state = 'PLAYING';
+      $store.startTime = $store.startTime ?? Date.now();
+      $store.value = value;
+      return;
+    }
+
+    // Add new word on space
+    if (
+      $store.state === 'PLAYING' &&
+      !value.startsWith(' ') &&
+      value.endsWith(' ')
+    ) {
       const word = value.substring(0, value.length - 1);
       $store.inputWords.push(word);
       $store.value = '';
       return;
     }
 
-    $store.value = value;
+    // Set value
+    if ($store.state === 'PLAYING') {
+      $store.value = value;
+    }
   },
   reset: () => {
     replaceArray($store.randomWords, getRandomWords(WORD_COUNT));

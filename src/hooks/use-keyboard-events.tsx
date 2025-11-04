@@ -1,4 +1,3 @@
-import { INPUT_ID } from '@/components/typer';
 import { $store } from '@/utils/store';
 import { useEffect } from 'react';
 
@@ -12,15 +11,6 @@ export const useKeyboardEvents = () => {
         (event.key === 'R' || event.key === 'r')
       ) {
         $store.reset();
-      }
-
-      // Start on type
-      if ($store.state === 'IDLE') {
-        const input = document.getElementById(INPUT_ID);
-        input?.focus();
-        $store.state = 'PLAYING';
-        $store.startTime = $store.startTime ?? Date.now();
-        return;
       }
 
       // Edit previous word on backspace

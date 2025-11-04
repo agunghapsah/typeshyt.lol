@@ -1,3 +1,4 @@
+import { Debug } from '@/components/debug';
 import { Result } from '@/components/result';
 import { Timer } from '@/components/timer';
 import { Typer } from '@/components/typer';
@@ -12,7 +13,7 @@ export const Route = createFileRoute('/')({
 
 function App() {
   useKeyboardEvents();
-  const { state } = useSnapshot($store);
+  const { state } = useSnapshot($store, { sync: true });
 
   return (
     <div
@@ -29,6 +30,7 @@ function App() {
       `}
     >
       <h1 className="text-4xl font-bold">typeshyt</h1>
+      <Debug />
 
       {state === 'PLAYING' && <Timer />}
       {state !== 'END' ? <Typer /> : <Result />}
