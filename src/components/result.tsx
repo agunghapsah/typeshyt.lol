@@ -45,7 +45,7 @@ export const Result = () => {
     );
 
     const accuracy =
-      Math.trunc((correct / $store.inputHistory.length) * 100 * 100) / 100;
+      Math.trunc((correct / $store.inputHistory.length) * 100 * 100) / 100 || 0;
     return { accuracy, correct, incorrect };
   }, []);
 
