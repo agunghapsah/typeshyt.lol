@@ -1,5 +1,5 @@
 import { $store } from '@/utils/store';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSnapshot } from 'valtio';
 import { subscribeKey } from 'valtio/utils';
 
@@ -8,7 +8,21 @@ export const CURRENT_WORD_ID = 'currentWord';
 
 export const Typer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isFocus } = useSnapshot($store);
+  const { isFocus: isFocusValue } = useSnapshot($store);
+  const [isFocus, setIsFocus] = useState(() => isFocusValue);
+
+  useEffect(() => {
+    if (!isFocus) {
+      setIsFocus(isFocusValue);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setIsFocus(isFocusValue);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [isFocusValue]);
 
   // Scroll to current word
   useEffect(() => {
@@ -77,6 +91,7 @@ export const Typer = () => {
           opacity-100
           data-[focus=true]:opacity-0
           transition-opacity
+          text-xl
         `}
       >
         <p>Click here to continue</p>

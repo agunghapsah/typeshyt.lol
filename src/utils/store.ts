@@ -14,8 +14,6 @@ type Duration = (typeof durations)[number];
 export const durations = [15_000, 30_000, 45_000, 60_000] as const;
 export const DEFAULT_DURATION = durations[0];
 
-export const WORD_COUNT = 50;
-
 type Store = {
   isFocus: boolean;
   startTime: number | undefined;
@@ -44,7 +42,7 @@ export const $store = proxy<Store>({
   duration: DEFAULT_DURATION,
   difficulty: DEFAULT_DIFFICULTY,
   state: 'IDLE',
-  randomWords: getRandomWords(WORD_COUNT, DEFAULT_DIFFICULTY),
+  randomWords: getRandomWords(DEFAULT_DIFFICULTY),
   inputWords: [],
   inputHistory: [],
   value: '',
@@ -77,10 +75,7 @@ export const $store = proxy<Store>({
     }
   },
   reset: () => {
-    replaceArray(
-      $store.randomWords,
-      getRandomWords(WORD_COUNT, $store.difficulty)
-    );
+    replaceArray($store.randomWords, getRandomWords($store.difficulty));
     emptyArray($store.inputWords);
     $store.value = '';
     $store.elapsedTime = 0;
@@ -93,5 +88,5 @@ export const $store = proxy<Store>({
 });
 
 subscribeKey($store, 'difficulty', (difficulty) => {
-  replaceArray($store.randomWords, getRandomWords(WORD_COUNT, difficulty));
+  replaceArray($store.randomWords, getRandomWords(difficulty));
 });
