@@ -5,14 +5,17 @@ import { emptyArray } from './empty-array';
 import { isValidCharacter } from './is-valid-character';
 import { INPUT_ID } from '@/components/typer';
 
-export const DEFAULT_DURATION = 15_000;
+type Duration = (typeof durations)[number];
+export const durations = [15_000, 30_000, 45_000, 60_000] as const;
+export const DEFAULT_DURATION = durations[0];
+
 export const WORD_COUNT = 50;
 
 type Store = {
   isFocus: boolean;
   startTime: number | undefined;
   elapsedTime: number;
-  duration: number;
+  duration: Duration;
 
   inputHistory: {
     timestamp: number;

@@ -1,4 +1,5 @@
 import { Result } from '@/components/result';
+import { Settings } from '@/components/settings';
 import { Timer } from '@/components/timer';
 import { Typer } from '@/components/typer';
 import { $store } from '@/utils/store';
@@ -30,6 +31,7 @@ function App() {
 
       <div className="flex flex-col gap-6">
         {/* <Debug /> */}
+        {state === 'IDLE' && <Settings />}
         {state !== 'END' && <Timer />}
         {state !== 'END' ? <Typer /> : <Result />}
       </div>
