@@ -14,7 +14,11 @@ export const Settings = () => {
         [&_button]:border
         [&_button]:rounded-xl
         flex
-        gap-8
+        flex-col
+        items-center
+        md:flex-row
+        gap-6
+        md:gap-8
       `}
     >
       <div className="flex gap-2">

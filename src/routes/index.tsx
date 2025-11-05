@@ -23,17 +23,27 @@ function App() {
         flex
         flex-col
         items-center
-        p-18
-        gap-16
+        p-8
+        md:p-18
       `}
     >
-      <h1 className="text-7xl font-bold">typeshyt</h1>
+      <div
+        className={`
+          flex
+          flex-col
+          items-center
+          gap-16
+          md:max-w-4xl
+        `}
+      >
+        <h1 className="text-7xl font-bold">typeshyt</h1>
 
-      <div className="flex flex-col gap-6">
-        {/* <Debug /> */}
-        {state === 'IDLE' && <Settings />}
-        {state !== 'END' && <Timer />}
-        {state !== 'END' ? <Typer /> : <Result />}
+        <div className="flex flex-col gap-6">
+          {/* <Debug /> */}
+          {state === 'IDLE' && <Settings />}
+          {state !== 'END' && <Timer />}
+          {state !== 'END' ? <Typer /> : <Result />}
+        </div>
       </div>
     </div>
   );
