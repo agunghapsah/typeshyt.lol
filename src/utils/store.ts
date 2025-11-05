@@ -1,9 +1,14 @@
 import { proxy } from 'valtio';
-import { getRandomWords } from './random-words';
+import {
+  DEFAULT_DIFFICULTY,
+  getRandomWords,
+  type Difficulty,
+} from './random-words';
 import { replaceArray } from './replace-array';
 import { emptyArray } from './empty-array';
 import { isValidCharacter } from './is-valid-character';
 import { INPUT_ID } from '@/components/typer';
+import { subscribeKey } from 'valtio/utils';
 
 type Duration = (typeof durations)[number];
 export const durations = [15_000, 30_000, 45_000, 60_000] as const;
@@ -16,6 +21,7 @@ type Store = {
   startTime: number | undefined;
   elapsedTime: number;
   duration: Duration;
+  difficulty: Difficulty;
 
   inputHistory: {
     timestamp: number;
@@ -36,8 +42,9 @@ export const $store = proxy<Store>({
   startTime: undefined,
   elapsedTime: 0,
   duration: DEFAULT_DURATION,
+  difficulty: DEFAULT_DIFFICULTY,
   state: 'IDLE',
-  randomWords: getRandomWords(WORD_COUNT),
+  randomWords: getRandomWords(WORD_COUNT, DEFAULT_DIFFICULTY),
   inputWords: [],
   inputHistory: [],
   value: '',
@@ -70,10 +77,12 @@ export const $store = proxy<Store>({
     }
   },
   reset: () => {
-    replaceArray($store.randomWords, getRandomWords(WORD_COUNT));
+    replaceArray(
+      $store.randomWords,
+      getRandomWords(WORD_COUNT, $store.difficulty)
+    );
     emptyArray($store.inputWords);
     $store.value = '';
-    $store.duration = DEFAULT_DURATION;
     $store.elapsedTime = 0;
     $store.startTime = undefined;
 
@@ -81,4 +90,8 @@ export const $store = proxy<Store>({
       $store.state = 'IDLE';
     });
   },
+});
+
+subscribeKey($store, 'difficulty', (difficulty) => {
+  replaceArray($store.randomWords, getRandomWords(WORD_COUNT, difficulty));
 });

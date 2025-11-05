@@ -1,8 +1,10 @@
+import { difficulties } from '@/utils/random-words';
 import { $store, durations } from '@/utils/store';
 import { useSnapshot } from 'valtio';
+import { INPUT_ID } from './typer';
 
 export const Settings = () => {
-  const { duration } = useSnapshot($store);
+  const { duration, difficulty } = useSnapshot($store);
 
   return (
     <div
@@ -12,14 +14,15 @@ export const Settings = () => {
         [&_button]:border
         [&_button]:rounded-xl
         flex
-        gap-6
+        gap-8
       `}
     >
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         {durations.map((value) => (
           <button
             onClick={() => {
               $store.duration = value;
+              document.getElementById(INPUT_ID)?.focus();
             }}
             className={
               duration === value
@@ -32,6 +35,28 @@ export const Settings = () => {
             key={value}
           >
             {value / 1000}s
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3">
+        {difficulties.map((value) => (
+          <button
+            onClick={() => {
+              $store.difficulty = value;
+              document.getElementById(INPUT_ID)?.focus();
+            }}
+            className={
+              difficulty === value
+                ? ''
+                : `
+                border-gray-700
+                text-gray-500
+                `
+            }
+            key={value}
+          >
+            {value}
           </button>
         ))}
       </div>
